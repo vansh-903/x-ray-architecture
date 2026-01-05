@@ -18,19 +18,44 @@ Traditional logs tell you "Pipeline completed in 2.5s". That's useless.
 
 ## How X-Ray Works
 
+X-Ray has three components:
+
 ```
-Our Code           X-Ray SDK         X-Ray API         Storage
-    │                  │                 │                │
-    │  with run()      │                 │                │
-    ├─────────────────>│                 │                │
-    │  with step()     │                 │                │
-    ├─────────────────>│  (captures)     │                │
-    │  step.reject()   │                 │                │
-    ├─────────────────>│                 │                │
-    │  (run ends)      │    POST /runs   │                │
-    │                  ├────────────────>│    (stores)    │
-    │                  │                 ├───────────────>│
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   Your      │      │   X-Ray     │      │   X-Ray     │
+│   Pipeline  │ ───> │   SDK       │ ───> │   API       │
+│             │      │             │      │             │
+│  (runs the  │      │ (captures   │      │ (stores &   │
+│   logic)    │      │  decisions) │      │  queries)   │
+└─────────────┘      └─────────────┘      └─────────────┘
 ```
+
+**Step-by-step flow:**
+
+1. **Pipeline starts** → SDK creates a new Run
+2. **Each step executes** → SDK captures input, output, rejections
+3. **Items get rejected** → SDK records WHY (reason + details)
+4. **Pipeline ends** → SDK sends all data to API
+5. **Later** → Query API to debug what happened
+
+**What gets captured at each step:**
+
+```
+Step: filter_candidates
+├── Input: 500 products
+├── Output: 30 products
+├── Rejections:
+│   ├── "price_too_high": 200 items
+│   │   └── Sample: {id: "prod_1", price: 150, threshold: 100}
+│   ├── "wrong_category": 270 items
+│   │   └── Sample: {id: "prod_2", category: "electronics"}
+└── Duration: 120ms
+```
+
+**If something fails:**
+- Error is captured at both step and run level
+- All data before the crash is still saved
+- You know exactly which step failed and why
 
 ---
 
