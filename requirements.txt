@@ -1,0 +1,10 @@
+# SDK dependencies
+requests>=2.28.0
+pydantic>=2.0.0
+
+# API dependencies
+fastapi>=0.100.0
+uvicorn>=0.22.0
+
+# Development
+python-dotenv>=1.0.0
