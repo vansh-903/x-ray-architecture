@@ -205,12 +205,23 @@ With X-Ray:
 
 ## 7. What's Next
 
-| Priority | Feature | Why |
-|----------|---------|-----|
-| High | Async ingestion | Don't block pipelines |
-| High | PostgreSQL storage | Persist data |
-| Medium | Alerting | "Filter rejecting >95% - investigate" |
-| Low | Visual timeline | UI for non-engineers |
+If shipping this SDK for real-world use, here are the features I would work on:
+
+**Compare Two Runs Side-by-Side**
+- Run pipeline twice - once it worked, once it failed
+- See exactly where they diverged
+- Example: Run A had keywords ["case", "cover"], Run B had ["case", "stand"] - that's where the bug started
+- Instead of debugging each run separately, you see the difference immediately
+
+**Search Within Rejection Details**
+- Currently you can see "470 items rejected for price_too_high" but can't search inside those rejections
+- With this feature: Query specific items like "show rejections where price was between 100-150"
+- Useful for debugging edge cases - maybe items at certain price ranges shouldn't be rejected
+
+**Webhooks for Events**
+- When something happens in X-Ray, automatically notify another system
+- Examples: Run fails → Send Slack message, Rejection rate > 90% → Trigger alert
+- You don't have to manually check X-Ray - the system tells you when something needs attention
 
 ---
 
