@@ -257,15 +257,82 @@ If shipping this SDK for real-world use, here are the features we would work on:
 
 ## API Reference
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/runs` | Save run with all steps |
-| GET | `/runs` | List runs (filter by pipeline, status) |
-| GET | `/runs/{id}` | Get full run details |
-| GET | `/steps` | Search steps across all runs |
+### POST /runs
+Save a completed run with all its steps.
 
-**Example:**
+**Request:**
 ```
-GET /steps?step_type=filter&rejection_rate_gt=0.9
+{
+  "run_id": "run_abc123",
+  "pipeline": "competitor_selection",
+  "status": "completed",
+  "input": {"product": "iPhone Case"},
+  "output": {"selected": "phone_case_x"},
+  "steps": [...]
+}
 ```
-→ Find all filter steps rejecting >90% of candidates.
+
+**Response:** `201 Created`
+
+---
+
+### GET /runs
+List all runs. Filter by pipeline or status.
+
+**Request:** `GET /runs?pipeline=competitor_selection&status=failed`
+
+**Response:**
+```
+{
+  "runs": [
+    {"run_id": "run_abc123", "pipeline": "competitor_selection", "status": "failed"},
+    {"run_id": "run_def456", "pipeline": "competitor_selection", "status": "failed"}
+  ],
+  "total": 2
+}
+```
+
+---
+
+### GET /runs/{id}
+Get full details of a specific run including all steps.
+
+**Request:** `GET /runs/run_abc123`
+
+**Response:**
+```
+{
+  "run_id": "run_abc123",
+  "pipeline": "competitor_selection",
+  "status": "completed",
+  "input": {"product": "iPhone Case"},
+  "output": {"selected": "phone_case_x"},
+  "steps": [
+    {
+      "name": "filter_candidates",
+      "step_type": "filter",
+      "input_count": 500,
+      "output_count": 30,
+      "rejection_counts": {"price_too_high": 200, "wrong_category": 270}
+    }
+  ]
+}
+```
+
+---
+
+### GET /steps
+Search steps across all runs. Useful for finding problematic steps.
+
+**Request:** `GET /steps?step_type=filter&rejection_rate_gt=0.9`
+
+**Response:**
+```
+{
+  "steps": [
+    {"run_id": "run_abc123", "step_name": "filter_candidates", "rejection_rate": 0.94},
+    {"run_id": "run_xyz789", "step_name": "filter_products", "rejection_rate": 0.91}
+  ],
+  "total": 2
+}
+```
