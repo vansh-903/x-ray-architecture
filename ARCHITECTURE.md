@@ -2,7 +2,7 @@
 
 ## The Problem
 
-Modern pipelines have multiple steps. When output is wrong, you don't know which step failed.
+Modern pipelines have multiple steps. When output is wrong, we don't know which step failed.
 
 ```
 Product → Keywords → Search → Filter → Rank → Select → Wrong Result
@@ -10,7 +10,7 @@ Product → Keywords → Search → Filter → Rank → Select → Wrong Result
                                                Which step broke?
 ```
 
-Traditional logs tell you "Pipeline completed in 2.5s". That's useless.
+Traditional logs tell us "Pipeline completed in 2.5s". That's useless.
 
 **X-Ray captures WHY each step made its decision.**
 
@@ -22,7 +22,7 @@ X-Ray has three components:
 
 ```
 ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   Your      │      │   X-Ray     │      │   X-Ray     │
+│   Our       │      │   X-Ray     │      │   X-Ray     │
 │   Pipeline  │ ───> │   SDK       │ ───> │   API       │
 │             │      │             │      │             │
 │  (runs the  │      │ (captures   │      │ (stores &   │
@@ -55,7 +55,7 @@ Step: filter_candidates
 **If something fails:**
 - Error is captured at both step and run level
 - All data before the crash is still saved
-- You know exactly which step failed and why
+- We know exactly which step failed and why
 
 ---
 
@@ -96,10 +96,15 @@ Run: "Find competitor for iPhone Case"
 - Steps are separate → can query "all filter steps with >90% rejection" across ALL pipelines
 - Errors captured at both run and step level → know exactly where it broke
 
-**Alternatives I rejected:**
-- Flat logs: Can't query across pipelines
-- One big JSON per run: Can't search steps across runs
-- Separate tables for everything: Overcomplicated for this use case
+**Alternatives we considered:**
+
+- **Flat logs:** Store everything as plain text logs. Problem: Can't query "show all filter steps with >90% rejection" without scanning every log line. Too slow at scale.
+
+- **One big JSON per run:** Store entire run as single JSON blob. Problem: To find a specific step across 1000 runs, we'd have to load all 1000 JSONs into memory. Doesn't scale.
+
+- **Separate tables for everything:** Runs table, Steps table, Rejections table, all normalized. Problem: Too many joins for simple queries. Overcomplicated for what we need.
+
+We chose hierarchical structure (Runs → Steps → Events) because it balances queryability with simplicity.
 
 ---
 
@@ -109,7 +114,7 @@ Run: "Find competitor for iPhone Case"
 
 ### Without X-Ray
 
-You only see the final output: "laptop_stand". No idea which step failed. You start guessing, add print statements, re-run, repeat.
+We only see the final output: "laptop_stand". No idea which step failed. We start guessing, add print statements, re-run, repeat.
 
 ### With X-Ray
 
@@ -143,7 +148,7 @@ Keyword generation incorrectly produced "stand" from "iPhone Case". This pulled 
 
 Fix keyword generation logic to not produce generic words like "stand".
 
-**Without X-Ray:** Looks like a ranking problem—you debug the wrong step.
+**Without X-Ray:** Looks like a ranking problem—we debug the wrong step.
 **With X-Ray:** Trace backwards and find the actual source.
 
 ---
@@ -164,7 +169,7 @@ Fix keyword generation logic to not produce generic words like "stand".
 | `rank` | Scores candidates |
 | `select` | Picks final answer |
 
-**Now I can query across ALL pipelines:**
+**Now we can query across ALL pipelines:**
 ```
 GET /steps?step_type=filter&rejection_rate_gt=0.9
 ```
@@ -230,23 +235,23 @@ With X-Ray:
 
 ## 7. What's Next
 
-If shipping this SDK for real-world use, here are the features I would work on:
+If shipping this SDK for real-world use, here are the features we would work on:
 
 **Compare Two Runs Side-by-Side**
 - Run pipeline twice - once it worked, once it failed
 - See exactly where they diverged
 - Example: Run A had keywords ["case", "cover"], Run B had ["case", "stand"] - that's where the bug started
-- Instead of debugging each run separately, you see the difference immediately
+- Instead of debugging each run separately, we see the difference immediately
 
 **Search Within Rejection Details**
-- Currently you can see "470 items rejected for price_too_high" but can't search inside those rejections
+- Currently we can see "470 items rejected for price_too_high" but can't search inside those rejections
 - With this feature: Query specific items like "show rejections where price was between 100-150"
 - Useful for debugging edge cases - maybe items at certain price ranges shouldn't be rejected
 
 **Webhooks for Events**
 - When something happens in X-Ray, automatically notify another system
 - Examples: Run fails → Send Slack message, Rejection rate > 90% → Trigger alert
-- You don't have to manually check X-Ray - the system tells you when something needs attention
+- We don't have to manually check X-Ray - the system tells us when something needs attention
 
 ---
 
